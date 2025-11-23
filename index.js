@@ -6,41 +6,47 @@ const config = require('./config'),
     */
 
     ActivityType = {
-        "boxing": {
-            "id": 8,
-            "name": "BOXING",
-            "displayText": "Boxing",
-            "preference": 3
-        },
         "hrx": {
             "id": 69,
             "name": "HRX WORKOUT",
             "displayText": "HRX WORKOUT",
             "preference": 1
         },
+        "strength": {
+            "id": 69,
+            "name": "ADIDAS STRENGTH+",
+            "displayText": "ADIDAS STRENGTH+",
+            "preference": 2
+        },
+        "yoga": {
+            "id": 5,
+            "name": "EVOLVE YOGA",
+            "displayText": "EVOLVE YOGA",
+            "preference": 3
+        },
         "dance": {
             "id": 56,
             "name": "DANCE FITNESS",
-            "displayText": "Dance",
+            "displayText": "DANCE FITNESS",
             "preference": 4
         },
         "burn": {
             "id": 66,
             "name": "BURN",
-            "displayText": "Burn",
+            "displayText": "BURN",
             "preference": 5
         },
-        "yoga": {
-            "id": 5,
-            "name": "EVOLVE YOGA",
-            "displayText": "Yoga",
+        "boxing": {
+            "id": 8,
+            "name": "BOXING BAG WORKOUT",
+            "displayText": "BOXING BAG WORKOUT",
             "preference": 6
         },
-        "strength": {
-            "id": 69,
-            "name": "ADIDAS STRENGTH+",
-            "displayText": "Strength",
-            "preference": 2
+        "fusionDance": {
+            "id": 56,
+            "name": "FUSION DANCE FITNESS",
+            "displayText": "FUSION DANCE FITNESS",
+            "preference": 7
         }
     };
 
@@ -170,9 +176,6 @@ async function makeAPICall(request, host, path, method, headers) {
 }
 
 function getSlots(classesForDay, slot, classTypes) {
-    let classTypeIDs = classTypes.map(function (classType) {
-        return classType.id;
-    });
     
     let timeSlot = classesForDay.classByTimeList.filter(function (classByTime) {
         return classByTime.id == slot;

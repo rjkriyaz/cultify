@@ -2,7 +2,7 @@ name: Auto Book Cult Class
 
 on:
   schedule:
-    - cron: '30 16 * * *'  # 10:00 PM IST sharp every night
+    - cron: '40 17 * * *'  # 11:10 PM IST (17:40 UTC) — TRIAL RUN
   workflow_dispatch:
 
 env:

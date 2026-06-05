@@ -2,11 +2,11 @@ name: Auto Book Cult Class
 
 on:
   schedule:
-    - cron: '35 16 * * *' # 4:35 PM UTC i.e 10:05 PM IST
+    - cron: '30 16 * * *'  # 10:00 PM IST sharp every night
   workflow_dispatch:
 
 env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true  # ← ADD THIS
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   book-class:
@@ -14,10 +14,10 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4  # ← already latest, fine
+        uses: actions/checkout@v5
 
       - name: Setup Bun
-        uses: oven-sh/setup-bun@v2  # ← CHANGE v1 → v2
+        uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
 

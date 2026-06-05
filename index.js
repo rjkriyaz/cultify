@@ -104,42 +104,75 @@ function hasBookingForDate(classesForDay) {
     return false;
 }
 
+// async function main() {
+//     try {
+//         let classes = await makeAPICall({}, CURE_FIT_HOST, URI.GET_CLASSES, HTTP_GET, commonHeaders);
+//         let date = classes.days[classes.days.length - 1].id;
+        
+//         console.log(`Booking for ${date}`);
+        
+//         if (hasBookingForDate(classes.classByDateMap[date])) {
+//             console.log(`Already booked on ${date}. Skipping.`);
+//             return;
+//         }
+        
+//         let slots = [];
+        
+//         for (let slot of PREFERRED_SLOTS) {
+//             slots = getSlots(classes.classByDateMap[date], slot, PREFERRED_CLASSES_IN_ORDER);
+            
+//             if (slots.length > 0) {
+//                 let classInfo = slots[0];
+//                 console.log(`Found ${PREFERRED_WORKOUT_NAME} at ${slot} on ${date}`);
+                
+//                 if (classInfo.state === 'WAITLIST_AVAILABLE') {
+//                     let waitlistCount = classInfo.waitlistInfo && classInfo.waitlistInfo.waitlistedUserCount || 0;
+//                     console.log(`Joining waitlist (${waitlistCount} people ahead)`);
+//                 } else {
+//                     console.log(`Booking (${classInfo.availableSeats} seats available)`);
+//                 }
+                
+//                 await bookClass(classInfo.id);
+//                 console.log("Class booked successfully!");
+//                 break;
+//             }
+//         }
+        
+//         if (slots.length === 0) {
+//             console.log(`No ${PREFERRED_WORKOUT_NAME} classes available on ${date}`);
+//         }
+//     } catch (error) {
+//         errorHandler(error);
+//     }
+// }
+
 async function main() {
     try {
         let classes = await makeAPICall({}, CURE_FIT_HOST, URI.GET_CLASSES, HTTP_GET, commonHeaders);
-        let date = classes.days[classes.days.length - 1].id;
         
-        console.log(`Booking for ${date}`);
-        
-        if (hasBookingForDate(classes.classByDateMap[date])) {
-            console.log(`Already booked on ${date}. Skipping.`);
-            return;
-        }
-        
-        let slots = [];
-        
-        for (let slot of PREFERRED_SLOTS) {
-            slots = getSlots(classes.classByDateMap[date], slot, PREFERRED_CLASSES_IN_ORDER);
-            
-            if (slots.length > 0) {
-                let classInfo = slots[0];
-                console.log(`Found ${PREFERRED_WORKOUT_NAME} at ${slot} on ${date}`);
-                
-                if (classInfo.state === 'WAITLIST_AVAILABLE') {
-                    let waitlistCount = classInfo.waitlistInfo && classInfo.waitlistInfo.waitlistedUserCount || 0;
-                    console.log(`Joining waitlist (${waitlistCount} people ahead)`);
-                } else {
-                    console.log(`Booking (${classInfo.availableSeats} seats available)`);
-                }
-                
-                await bookClass(classInfo.id);
-                console.log("Class booked successfully!");
-                break;
+        // Try from furthest day first, fall back to earlier days
+        for (let i = classes.days.length - 1; i >= 0; i--) {
+            let date = classes.days[i].id;
+            console.log(`Checking ${date}...`);
+
+            if (hasBookingForDate(classes.classByDateMap[date])) {
+                console.log(`Already booked on ${date}. Skipping.`);
+                continue;
             }
-        }
-        
-        if (slots.length === 0) {
-            console.log(`No ${PREFERRED_WORKOUT_NAME} classes available on ${date}`);
+
+            let booked = false;
+            for (let slot of PREFERRED_SLOTS) {
+                let slots = getSlots(classes.classByDateMap[date], slot, PREFERRED_CLASSES_IN_ORDER);
+                if (slots.length > 0) {
+                    let classInfo = slots[0];
+                    console.log(`Booking ${PREFERRED_WORKOUT_NAME} at ${slot} on ${date}`);
+                    await bookClass(classInfo.id);
+                    console.log("Class booked successfully!");
+                    booked = true;
+                    break;
+                }
+            }
+            if (booked) break;
         }
     } catch (error) {
         errorHandler(error);

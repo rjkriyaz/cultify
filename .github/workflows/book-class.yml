@@ -1,8 +1,6 @@
 name: Auto Book Cult Class
 
 on:
-  schedule:
-    - cron: '30 16 * * *'  # 10:00 PM IST
   workflow_dispatch:
 
 env:
@@ -32,3 +30,19 @@ jobs:
           PREFERRED_WORKOUT: ${{ secrets.PREFERRED_WORKOUT }}
           ENABLE_WAITLIST: ${{ secrets.ENABLE_WAITLIST }}
         run: bun index.js
+
+      - name: Send success email
+        if: success()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          secure: true
+          username: ${{ secrets.EMAIL_USERNAME }}
+          password: ${{ secrets.EMAIL_PASSWORD }}
+          subject: Cult booking success
+          to: ${{ secrets.EMAIL_TO }}
+          from: Cult Bot <${{ secrets.EMAIL_USERNAME }}>
+          body: |
+            Your Cult class booking workflow completed successfully.
+            Check the GitHub Actions logs for full details.

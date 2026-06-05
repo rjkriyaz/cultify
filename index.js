@@ -1,9 +1,5 @@
 "use strict";
 const config = require('./config'),
-    /*
-    Maintaining a list of activities and my preference
-    The id field is the workoutId which part of classes object as a response of `api/cult/classes/` API
-    */
 
     ActivityType = {
         "hrx": {
@@ -60,6 +56,7 @@ const commonHeaders = {
     "content-type": "application/json",
     "Cookie": config.cookies
 };
+
 const CURE_FIT_HOST = "www.cult.fit";
 const URI = {
     "GET_CLASSES": "/api/cult/classes/v2?productType=FITNESS",
@@ -68,26 +65,18 @@ const URI = {
 const HTTP_POST = "POST",
     HTTP_GET = "GET";
 
-
-const PREFERRED_SLOTS = config.preferredSlots || ['09:00:00'];
-const PREFERRED_CENTER = config.preferredCenter || 1515;
-const PREFERRED_WORKOUT_NAME = config.preferredWorkout || "HRX WORKOUT";
-const ENABLE_WAITLIST = config.enableWaitlist !== false;
-
-// const PREFERRED_CLASSES_IN_ORDER = Object.values(ActivityType).filter(
-//     activity => activity.name === PREFERRED_WORKOUT_NAME
-// );
-
-const PREFERRED_WORKOUT_NAMES = (process.env.PREFERRED_WORKOUT || "HRX WORKOUT")
+const PREFERRED_SLOTS = config.preferredSlots || ['07:00:00'];
+const PREFERRED_CENTER = config.preferredCenter || 119;
+const PREFERRED_WORKOUT_NAMES = (config.preferredWorkout || "HRX WORKOUT")
     .split(',')
     .map(w => w.trim());
+const ENABLE_WAITLIST = config.enableWaitlist !== false;
 
 const PREFERRED_CLASSES_IN_ORDER = Object.values(ActivityType).filter(
     activity => PREFERRED_WORKOUT_NAMES.some(
         name => name.toLowerCase() === activity.name.toLowerCase()
     )
 );
-
 
 function hasBookingForDate(classesForDay) {
     for (let timeSlot of classesForDay.classByTimeList) {
@@ -104,83 +93,62 @@ function hasBookingForDate(classesForDay) {
     return false;
 }
 
-// async function main() {
-//     try {
-//         let classes = await makeAPICall({}, CURE_FIT_HOST, URI.GET_CLASSES, HTTP_GET, commonHeaders);
-//         let date = classes.days[classes.days.length - 1].id;
-        
-//         console.log(`Booking for ${date}`);
-        
-//         if (hasBookingForDate(classes.classByDateMap[date])) {
-//             console.log(`Already booked on ${date}. Skipping.`);
-//             return;
-//         }
-        
-//         let slots = [];
-        
-//         for (let slot of PREFERRED_SLOTS) {
-//             slots = getSlots(classes.classByDateMap[date], slot, PREFERRED_CLASSES_IN_ORDER);
-            
-//             if (slots.length > 0) {
-//                 let classInfo = slots[0];
-//                 console.log(`Found ${PREFERRED_WORKOUT_NAME} at ${slot} on ${date}`);
-                
-//                 if (classInfo.state === 'WAITLIST_AVAILABLE') {
-//                     let waitlistCount = classInfo.waitlistInfo && classInfo.waitlistInfo.waitlistedUserCount || 0;
-//                     console.log(`Joining waitlist (${waitlistCount} people ahead)`);
-//                 } else {
-//                     console.log(`Booking (${classInfo.availableSeats} seats available)`);
-//                 }
-                
-//                 await bookClass(classInfo.id);
-//                 console.log("Class booked successfully!");
-//                 break;
-//             }
-//         }
-        
-//         if (slots.length === 0) {
-//             console.log(`No ${PREFERRED_WORKOUT_NAME} classes available on ${date}`);
-//         }
-//     } catch (error) {
-//         errorHandler(error);
-//     }
-// }
-
 async function main() {
     try {
+        console.log("API Key loaded:", config.apiKey ? "YES ✅" : "NO ❌");
+        console.log("Cookies loaded:", config.cookies ? "YES ✅" : "NO ❌");
+
         let classes = await makeAPICall({}, CURE_FIT_HOST, URI.GET_CLASSES, HTTP_GET, commonHeaders);
-        
-        // Try from furthest day first, fall back to earlier days
-        for (let i = classes.days.length - 1; i >= 0; i--) {
-            let date = classes.days[i].id;
-            console.log(`Checking ${date}...`);
+        let date = classes.days[classes.days.length - 1].id;
 
-            if (hasBookingForDate(classes.classByDateMap[date])) {
-                console.log(`Already booked on ${date}. Skipping.`);
-                continue;
-            }
+        // Skip Saturday (6) and Sunday (0) — rest days
+        const targetDay = new Date(date).getDay();
+        const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        console.log(`Target date: ${date} (${dayNames[targetDay]})`);
 
-            let booked = false;
-            for (let slot of PREFERRED_SLOTS) {
-                let slots = getSlots(classes.classByDateMap[date], slot, PREFERRED_CLASSES_IN_ORDER);
-                if (slots.length > 0) {
-                    let classInfo = slots[0];
-                    console.log(`Booking ${PREFERRED_WORKOUT_NAME} at ${slot} on ${date}`);
-                    await bookClass(classInfo.id);
-                    console.log("Class booked successfully!");
-                    booked = true;
-                    break;
-                }
-            }
-            if (booked) break;
+        if (targetDay === 0 || targetDay === 6) {
+            console.log(`${dayNames[targetDay]} is a rest day — skipping booking.`);
+            return;
         }
+
+        if (hasBookingForDate(classes.classByDateMap[date])) {
+            console.log(`Already booked on ${date}. Skipping.`);
+            return;
+        }
+
+        let booked = false;
+
+        for (let slot of PREFERRED_SLOTS) {
+            let slots = getSlots(classes.classByDateMap[date], slot, PREFERRED_CLASSES_IN_ORDER);
+
+            if (slots.length > 0) {
+                let classInfo = slots[0];
+                console.log(`Found ${classInfo.workoutName} at ${slot} on ${date}`);
+
+                if (classInfo.state === 'WAITLIST_AVAILABLE') {
+                    let waitlistCount = classInfo.waitlistInfo && classInfo.waitlistInfo.waitlistedUserCount || 0;
+                    console.log(`Joining waitlist (${waitlistCount} people ahead)`);
+                } else {
+                    console.log(`Booking (${classInfo.availableSeats} seats available)`);
+                }
+
+                await bookClass(classInfo.id);
+                console.log("✅ Class booked successfully!");
+                booked = true;
+                break;
+            }
+        }
+
+        if (!booked) {
+            console.log(`❌ No available classes found for ${date} at slots: ${PREFERRED_SLOTS.join(', ')}`);
+        }
+
     } catch (error) {
         errorHandler(error);
     }
 }
 
 main();
-
 
 async function bookClass(activityID) {
     return await makeAPICall({}, CURE_FIT_HOST, "/api/cult/class/" + activityID + "/book", HTTP_POST, commonHeaders);
@@ -220,32 +188,33 @@ async function makeAPICall(request, host, path, method, headers) {
 }
 
 function getSlots(classesForDay, slot, classTypes) {
-    
     let timeSlot = classesForDay.classByTimeList.filter(function (classByTime) {
         return classByTime.id == slot;
     })[0];
-    
+
     if (!timeSlot) {
         return [];
     }
-    
+
     let centerClasses = timeSlot.centerWiseClasses.filter(function (center) {
         return center.centerId == PREFERRED_CENTER;
     })[0];
-    
+
     if (!centerClasses) {
         return [];
     }
-    
+
     let classIDs = centerClasses.classes.filter(function (classs) {
         let filterElement = classTypes.filter(function (classType) {
-            return classType.id == classs.workoutId && classType.name == classs.workoutName
+            return classType.id == classs.workoutId &&
+                classType.name.toLowerCase() === classs.workoutName.toLowerCase();
         })[0];
+
         if (!filterElement) {
             return false;
         }
         classs.preference = filterElement.preference;
-        
+
         if (ENABLE_WAITLIST) {
             return classs.state === 'AVAILABLE' || classs.state === 'WAITLIST_AVAILABLE';
         } else {
@@ -255,10 +224,14 @@ function getSlots(classesForDay, slot, classTypes) {
     .sort(function (class1, class2) {
         return class1.preference - class2.preference;
     });
-    
+
     return classIDs;
 }
 
 function errorHandler(error) {
-    console.error("Booking failed:", error);
+    console.error("❌ Booking failed:", error.message);
+    if (error.message.includes('401') || error.message.includes('Unauthorized') || error.message.includes('Authorization')) {
+        console.error("🍪 Cookie/session expired! Update CURL_COMMAND secret in GitHub.");
+    }
+    process.exit(1);
 }

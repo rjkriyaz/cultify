@@ -5,22 +5,25 @@ on:
     - cron: '35 16 * * *' # 4:35 PM UTC i.e 10:05 PM IST
   workflow_dispatch:
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true  # ← ADD THIS
+
 jobs:
   book-class:
     runs-on: ubuntu-latest
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
-      
+        uses: actions/checkout@v4  # ← already latest, fine
+
       - name: Setup Bun
-        uses: oven-sh/setup-bun@v1
+        uses: oven-sh/setup-bun@v2  # ← CHANGE v1 → v2
         with:
           bun-version: latest
-      
+
       - name: Install dependencies
         run: bun install
-      
+
       - name: Run booking script
         env:
           CURL_COMMAND: ${{ secrets.CURL_COMMAND }}
@@ -29,4 +32,3 @@ jobs:
           PREFERRED_WORKOUT: ${{ secrets.PREFERRED_WORKOUT }}
           ENABLE_WAITLIST: ${{ secrets.ENABLE_WAITLIST }}
         run: bun index.js
-

@@ -2,7 +2,7 @@ name: Auto Book Cult Class
 
 on:
   schedule:
-    - cron: '40 17 * * *'  # 11:10 PM IST (17:40 UTC) — TRIAL RUN
+    - cron: '30 16 * * *'  # 10:00 PM IST
   workflow_dispatch:
 
 env:
@@ -11,7 +11,7 @@ env:
 jobs:
   book-class:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v5

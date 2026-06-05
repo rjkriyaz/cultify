@@ -74,9 +74,20 @@ const PREFERRED_CENTER = config.preferredCenter || 1515;
 const PREFERRED_WORKOUT_NAME = config.preferredWorkout || "HRX WORKOUT";
 const ENABLE_WAITLIST = config.enableWaitlist !== false;
 
+// const PREFERRED_CLASSES_IN_ORDER = Object.values(ActivityType).filter(
+//     activity => activity.name === PREFERRED_WORKOUT_NAME
+// );
+
+const PREFERRED_WORKOUT_NAMES = (process.env.PREFERRED_WORKOUT || "HRX WORKOUT")
+    .split(',')
+    .map(w => w.trim());
+
 const PREFERRED_CLASSES_IN_ORDER = Object.values(ActivityType).filter(
-    activity => activity.name === PREFERRED_WORKOUT_NAME
+    activity => PREFERRED_WORKOUT_NAMES.some(
+        name => name.toLowerCase() === activity.name.toLowerCase()
+    )
 );
+
 
 function hasBookingForDate(classesForDay) {
     for (let timeSlot of classesForDay.classByTimeList) {
